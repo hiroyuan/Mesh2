@@ -154,23 +154,47 @@ public class Controller : MonoBehaviour {
 
     public void SplitMesh()
     {
+        //Debug.Log("subBounds length: " + subBounds.Length);
         for (int i = 0; i < subBounds.Length; i++)
         {
+            //Debug.Log("extents for subBounds: " + subBounds[i].subBound.extents);
+            //Debug.Log("Status of get status: " + subBounds[i].GetStatus());
             if (subBounds[i].GetStatus())
             {
-                for (int index = 0; index < mesh.vertices.Length; index++)
+                //Debug.Log("Mesh: " + mesh.vertices.Length);
+                foreach(GameObject g in list) {
+                    trans = g.transform;
+                }
+                Vector3[] newVertecis = transformToWorldPoint(mesh.vertices);
+                for (int index = 0; index < newVertecis.Length; index++)
                 {
-                    if (subBounds[i].CheckIntersects(mesh.vertices[index]))
+                    //Debug.Log("check intersects: " + subBounds[i].CheckIntersects(mesh.vertices[index]));
+                    //Debug.Log("subBounds: " + subBounds[i]);
+                    //Debug.Log("mesh vertex position: " + newVertecis[index]);
+                    if (subBounds[i].CheckIntersects(newVertecis[index]))
                     {
+                        if (index < mesh.colors.Length) {
+                            partialVertices.Add(mesh.vertices[index]);
+                            partialNormals.Add(mesh.normals[index]);
+                            partialUVs.Add(mesh.uv[index]);
+                        }
                         partialVertices.Add(mesh.vertices[index]);
                         partialNormals.Add(mesh.normals[index]);
                         partialColors.Add(mesh.colors[index]);
                         partialUVs.Add(mesh.uv[index]);
+                        //Debug.Log("info added");
                     }
                 }
             }
         }
         
+        //for (int index = 0; index < mesh.vertices.Length; index++)
+        //{
+        //    if (bounds.Contains(mesh.vertices[index]))
+        //    {
+        //        Debug.Log("mesh vertex is inside bound");
+        //    }
+        //}
     }
 
     /// <summary>
