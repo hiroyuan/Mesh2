@@ -18,6 +18,8 @@ public class Controller : MonoBehaviour {
     public int yAxisSplitter;
     public int zAxisSplitter;
 
+    public int testSubBoundsIndex;
+
     // key = old vertex index, value = new vertex index
     public Dictionary<int, int> oldVertexIndices2newVertexIndices;
 
@@ -44,6 +46,7 @@ public class Controller : MonoBehaviour {
 
         subBounds = new BoundHolder[xDirCount * yDirCount * zDirCount];
         mesh = GameObject.Find("Sphere").GetComponent<MeshFilter>().mesh;
+        trans = GameObject.Find("Sphere").transform;
 
         oldVertexIndices2newVertexIndices = new Dictionary<int, int>();
         triangleHash = new HashSet<Triangle>();
@@ -57,6 +60,8 @@ public class Controller : MonoBehaviour {
         subBounds = new BoundHolder[xDirCount * yDirCount * zDirCount];
         SplitBounds();
         ActivateSubBoundsByIndicator();
+        //GameObject g = GameObject.Find("IndicatorObject");
+        //FindBoundingBox(g.transform.position);
     }
 
     void TaskOnClick()
@@ -67,7 +72,7 @@ public class Controller : MonoBehaviour {
 
     void TaskOnClick2()
     {
-        Load();
+        //Load();
     }
 
     private void OnDrawGizmos()
@@ -78,6 +83,7 @@ public class Controller : MonoBehaviour {
             {
                 Gizmos.DrawWireCube(subBounds[i].GetBounds().center, subBounds[i].GetBounds().size);
             }
+            //Gizmos.DrawCube(subBounds[testSubBoundsIndex].GetBounds().center, subBounds[testSubBoundsIndex].GetBounds().size);
         }
     }
 
@@ -141,22 +147,22 @@ public class Controller : MonoBehaviour {
         float xStartPoint = bounds.min.x;
         float yStartPoint = bounds.min.y;
         float zStartPoint = bounds.min.z;
-        for (int i = 0; i < xDirCount; i++)
+        for (int i = 0; i < zDirCount; i++)
         {
             for (int j = 0; j < yDirCount; j++)
             {
-                for (int k = 0; k < zDirCount; k++)
+                for (int k = 0; k < xDirCount; k++)
                 {
                     subCenter = new Vector3(xStartPoint + sizeX / 2, yStartPoint + sizeY / 2, zStartPoint + sizeZ / 2);
                     subBounds[index++] = new BoundHolder(subCenter, subSize);
-                    zStartPoint += sizeZ;
+                    xStartPoint += sizeX;
                 }
-                zStartPoint = bounds.min.z;
+                xStartPoint = bounds.min.x;
                 yStartPoint += sizeY;
             }
-            zStartPoint = bounds.min.z;
+            xStartPoint = bounds.min.x;
             yStartPoint = bounds.min.y;
-            xStartPoint += sizeX;
+            zStartPoint += sizeZ;
         }
     }
 
@@ -175,50 +181,58 @@ public class Controller : MonoBehaviour {
         }
     }
 
+    //public void SplitMesh()
+    //{
+    //    for (int i = 0; i < subBounds.Length; i++)
+    //    {
+    //        foreach (GameObject g in list) trans = g.transform;
+
+    //        Vector3[] worldPointVertices = transformToWorldPoint(mesh.vertices);
+    //        for (int index = 0; index < worldPointVertices.Length; index++)
+    //        {
+    //            if (subBounds[i].CheckIntersects(worldPointVertices[index]))
+    //            {
+    //                if (index < mesh.colors.Length) partialColors.Add(mesh.colors[index]);
+
+    //                partialVertices.Add(mesh.vertices[index]);
+    //                partialNormals.Add(mesh.normals[index]);
+    //                partialUVs.Add(mesh.uv[index]);
+    //            }
+    //        }
+
+    //        Vector3[] worldPointPartialVertices = transformToWorldPoint(partialVertices.ToArray());
+    //        List<int> triangles = trianglesToUse(mesh.triangles, partialVertices);
+    //        for (int index = 0; index < worldPointVertices.Length; index++)
+    //        {
+    //            for (int newIndex = 0; newIndex < worldPointPartialVertices.Length; newIndex++)
+    //            {
+    //                if (worldPointVertices[index] == worldPointPartialVertices[newIndex] && !oldVertexIndices2newVertexIndices.ContainsKey(index))
+    //                    oldVertexIndices2newVertexIndices.Add(index, newIndex);
+    //            }
+    //        }
+    //        partialTriangles = transTriangle2newVertexIndices(triangles);
+
+    //        drawNewMesh(i);
+    //        clearArraysAndDic();
+    //    }
+    //}
+
+    //public void Load()
+    //{
+    //    for (int i = 0; i < subBounds.Length; i++)
+    //    {
+    //        GameObject g = (GameObject)AssetDatabase.LoadAssetAtPath("Assets/File/NewMesh" + i + ".mat", typeof(GameObject));
+    //        Instantiate(g);
+    //    }
+
+    //}
+
     public void SplitMesh()
     {
-        for (int i = 0; i < subBounds.Length; i++)
-        {
-            foreach(GameObject g in list) trans = g.transform;
-                
-            Vector3[] worldPointVertices = transformToWorldPoint(mesh.vertices);
-            for (int index = 0; index < worldPointVertices.Length; index++)
-            {
-                if (subBounds[i].CheckIntersects(worldPointVertices[index]))
-                {
-                    if (index < mesh.colors.Length) partialColors.Add(mesh.colors[index]);
-                        
-                    partialVertices.Add(mesh.vertices[index]);
-                    partialNormals.Add(mesh.normals[index]);
-                    partialUVs.Add(mesh.uv[index]);
-                }
-            }
-
-            Vector3[] worldPointPartialVertices = transformToWorldPoint(partialVertices.ToArray());
-            List<int> triangles = trianglesToUse(mesh.triangles, partialVertices);
-            for (int index = 0; index < worldPointVertices.Length; index++)
-            {
-                for (int newIndex = 0; newIndex < worldPointPartialVertices.Length; newIndex++)
-                {
-                    if (worldPointVertices[index] == worldPointPartialVertices[newIndex] && !oldVertexIndices2newVertexIndices.ContainsKey(index))
-                        oldVertexIndices2newVertexIndices.Add(index, newIndex);
-                }
-            }
-            partialTriangles = transTriangle2newVertexIndices(triangles);
-
-            drawNewMesh(i);
-            clearArraysAndDic();
-        }
-    }
-
-    public void Load()
-    {
-        for(int i = 0; i < subBounds.Length; i++)
-        {
-            GameObject g = (GameObject)AssetDatabase.LoadAssetAtPath("Assets/File/NewMesh" + i + ".mat", typeof(GameObject));
-            Instantiate(g);
-        }
-        
+        putVNCUIntoBoundingBox(mesh); // O(n)
+        putTrianglesIntoBoundingBox(mesh); // O(n)
+        regenerateTriangles();
+        drawNewMesh();
     }
 
     /// <summary>
@@ -284,7 +298,7 @@ public class Controller : MonoBehaviour {
         m.colors = partialColors.ToArray();
         m.uv = partialUVs.ToArray();
         //m.triangles = partialTriangles.ToArray();
-        writeNewTriArray(partialTriangles, m);
+        //writeNewTriArray(partialTriangles, m);
 
         mf.mesh = m;
         mr.material = new Material(Shader.Find("Transparent/Diffuse"));
@@ -301,47 +315,47 @@ public class Controller : MonoBehaviour {
     /// <param name="originalTriArray"></param>
     /// <param name="vertices"></param>
     /// <returns></returns>
-    private List<int> trianglesToUse(int[] originalTriArray, List<Vector3> vertices)
-    {
-        //List<int> retVal = new List<int>();
-        List<int> trianglesToKeep = new List<int>();
-        List<int> triangle = new List<int>();
-        for (int i = 0; i < originalTriArray.Length; i += 3)
-        {
-            triangle.Add(originalTriArray[i + 0]);
-            triangle.Add(originalTriArray[i + 1]);
-            triangle.Add(originalTriArray[i + 2]);
+    //private List<int> trianglesToUse(int[] originalTriArray, List<Vector3> vertices)
+    //{
+    //    List<int> retVal = new List<int>();
+    //    List<int> trianglesToKeep = new List<int>();
+    //    List<int> triangle = new List<int>();
+    //    for (int i = 0; i < originalTriArray.Length; i += 3)
+    //    {
+    //        triangle.Add(originalTriArray[i + 0]);
+    //        triangle.Add(originalTriArray[i + 1]);
+    //        triangle.Add(originalTriArray[i + 2]);
 
-            int[] onlyOneTriangle = new int[3];
-            onlyOneTriangle[0] = originalTriArray[i + 0];
-            onlyOneTriangle[1] = originalTriArray[i + 1];
-            onlyOneTriangle[2] = originalTriArray[i + 2];
-            Triangle t = new Triangle(onlyOneTriangle);
+    //        int[] onlyOneTriangle = new int[3];
+    //        onlyOneTriangle[0] = originalTriArray[i + 0];
+    //        onlyOneTriangle[1] = originalTriArray[i + 1];
+    //        onlyOneTriangle[2] = originalTriArray[i + 2];
+    //        Triangle t = new Triangle(onlyOneTriangle);
 
-            for (int triangleIndex = 0; triangleIndex < 3; triangleIndex++)
-            {
-                int vertexIndex = triangle[originalTriArray[triangleIndex]];
-                Vector3 vertex = vertices[vertexIndex];
-                bool keep = mesh.bounds.Contains(vertex);
-                if (keep)
-                {
-                    //triangleHash.Add(t);
-                    trianglesToKeep.Add(triangle[i + 0]);
-                    trianglesToKeep.Add(triangle[i + 1]);
-                    trianglesToKeep.Add(triangle[i + 2]);
-                    //break;
-                }
-            }
-        }
-        //List<Triangle> trianglesToKeep = new List<Triangle>(triangleHash);
-        //for (int i = 0; i < trianglesToKeep.Count; i++)
-        //{
-        //    retVal.AddRange(trianglesToKeep[i].GetTriangle());
-        //}
+    //        for (int triangleIndex = 0; triangleIndex < 3; triangleIndex++)
+    //        {
+    //            int vertexIndex = triangle[originalTriArray[triangleIndex]];
+    //            Vector3 vertex = vertices[vertexIndex];
+    //            bool keep = mesh.bounds.Contains(vertex);
+    //            if (keep)
+    //            {
+    //                triangleHash.Add(t);
+    //                trianglesToKeep.Add(triangle[i + 0]);
+    //                trianglesToKeep.Add(triangle[i + 1]);
+    //                trianglesToKeep.Add(triangle[i + 2]);
+    //                break;
+    //            }
+    //        }
+    //    }
+    //    //List<Triangle> trianglesToKeep = new List<Triangle>(triangleHash);
+    //    //for (int i = 0; i < trianglesToKeep.Count; i++)
+    //    //{
+    //    //    retVal.AddRange(trianglesToKeep[i].GetTriangle());
+    //    //}
 
-        //return retVal;
-        return trianglesToKeep;
-    }
+    //    //return retVal;
+    //    return trianglesToKeep;
+    //}
 
     /// <summary>
     /// This function figures out what indices they correespond to in the new vertex array which is counstructed by other function.
@@ -349,45 +363,152 @@ public class Controller : MonoBehaviour {
     /// </summary>
     /// <param name="originalTriangleList"></param>
     /// <returns></returns>
-    private List<int> transTriangle2newVertexIndices(List<int> originalTriangleList)
-    {
-        List<int> newTriangleList = new List<int>();
+    //private List<int> transTriangle2newVertexIndices(List<int> originalTriangleList)
+    //{
+    //    List<int> newTriangleList = new List<int>();
 
-        List<int> triangle = new List<int>();
-        for (int i = 0; i < originalTriangleList.Count; i += 3)
+    //    List<int> triangle = new List<int>();
+    //    for (int i = 0; i < originalTriangleList.Count; i += 3)
+    //    {
+    //        triangle.Insert(0, originalTriangleList[i + 2]);
+    //        triangle.Insert(0, originalTriangleList[i + 1]);
+    //        triangle.Insert(0, originalTriangleList[i + 0]);
+
+    //        List<int> newTriangle = new List<int>();
+    //        for (int tIndex = 0; tIndex < 3; tIndex++)
+    //        {
+    //            int oldVertexIndex = triangle[tIndex];
+    //            if (!oldVertexIndices2newVertexIndices.ContainsKey(oldVertexIndex))
+    //                break;
+    //            int newVertexIndex = oldVertexIndices2newVertexIndices[oldVertexIndex];
+    //            newTriangle.Add(newVertexIndex);
+    //        }
+    //        newTriangleList.AddRange(newTriangle);
+    //    }
+    //    return newTriangleList;
+    //}
+
+    //private void writeNewTriArray(List<int> newTriangleList, Mesh m)
+    //{
+    //    Debug.Log("number of index for triangle array: " + newTriangleList.Count);
+    //    m.SetTriangles(newTriangleList.ToArray(), 0);
+    //}
+
+    //private void clearArraysAndDic()
+    //{
+    //    partialVertices.Clear();
+    //    partialNormals.Clear();
+    //    partialColors.Clear();
+    //    partialUVs.Clear();
+    //    partialTriangles.Clear();
+    //    oldVertexIndices2newVertexIndices.Clear();
+    //    triangleHash.Clear();
+    //}
+
+    private BoundHolder FindBoundingBox(Vector3 vertex)
+    {
+        //Vector3 worldPoint = trans.TransformPoint(vertex);
+
+        float minX = bounds.min.x;
+        float maxX = bounds.max.x;
+        float minY = bounds.min.y;
+        float maxY = bounds.max.y;
+        float minZ = bounds.min.z;
+        float maxZ = bounds.max.z;
+
+        float xDirSizeOfSubBounds = (maxX - minX) / xDirCount;
+        float yDirSizeOfSubBounds = (maxY - minY) / yDirCount;
+        float zDirSizeOfSubBounds = (maxZ - minZ) / zDirCount;
+
+        float floatNthSubBoundsForXDir = (vertex.x - minX) / xDirSizeOfSubBounds;
+        float floatNthSubBoundsForYDir = (vertex.y - minY) / yDirSizeOfSubBounds;
+        float floatNthSubBoundsForZDir = (vertex.z - minZ) / zDirSizeOfSubBounds;
+
+        int nthSubBoundsForXDir = 0;
+        int nthSubBoundsForYDir = 0;
+        int nthSubBoundsForZDir = 0;
+
+        if (floatNthSubBoundsForXDir == System.Math.Floor(floatNthSubBoundsForXDir) && floatNthSubBoundsForXDir != 0)
+            nthSubBoundsForXDir = (int)floatNthSubBoundsForXDir - 1;
+        else if (floatNthSubBoundsForXDir == 0)
+            nthSubBoundsForXDir = 0;
+        else
+            nthSubBoundsForXDir = (int)floatNthSubBoundsForXDir;
+
+        if (floatNthSubBoundsForYDir == System.Math.Floor(floatNthSubBoundsForYDir) && floatNthSubBoundsForYDir != 0)
+            nthSubBoundsForYDir = (int)floatNthSubBoundsForYDir - 1;
+        else if (floatNthSubBoundsForYDir == 0)
+            nthSubBoundsForYDir = 0;
+        else
+            nthSubBoundsForYDir = (int)floatNthSubBoundsForYDir;
+
+        if (floatNthSubBoundsForZDir == System.Math.Floor(floatNthSubBoundsForZDir) && floatNthSubBoundsForZDir != 0)
+            nthSubBoundsForZDir = (int)floatNthSubBoundsForZDir - 1;
+        else if (floatNthSubBoundsForZDir == 0)
+            nthSubBoundsForZDir = 0;
+        else
+            nthSubBoundsForZDir = (int)floatNthSubBoundsForZDir;
+
+
+        int indexOfSubBounds = nthSubBoundsForXDir + nthSubBoundsForYDir * xDirCount + nthSubBoundsForZDir * xDirCount * yDirCount;
+        //Debug.Log("Index of SubBound: " + indexOfSubBounds);
+
+        return subBounds[indexOfSubBounds];
+    }
+
+    private void putVNCUIntoBoundingBox(Mesh m)
+    {
+        for (int index = 0; index < m.vertices.Length; index++)
         {
-            triangle.Insert(0, originalTriangleList[i + 2]);
-            triangle.Insert(0, originalTriangleList[i + 1]);
-            triangle.Insert(0, originalTriangleList[i + 0]);
-
-            List<int> newTriangle = new List<int>();
-            for (int tIndex = 0; tIndex < 3; tIndex++)
-            {
-                int oldVertexIndex = triangle[tIndex];
-                if (!oldVertexIndices2newVertexIndices.ContainsKey(oldVertexIndex))
-                    break;
-                int newVertexIndex = oldVertexIndices2newVertexIndices[oldVertexIndex];
-                newTriangle.Add(newVertexIndex);
-            }
-            newTriangleList.AddRange(newTriangle);
+            Vector3 worldPoint = trans.TransformPoint(m.vertices[index]);
+            BoundHolder b = FindBoundingBox(worldPoint);
+            Debug.Log(index);
+            b.AddVertexAndPopulateDic(m.vertices[index], m.vertices);
+            b.AddNormals(m.normals[index]);
+            if (m.vertices.Length == m.colors.Length) b.AddColor(m.colors[index]);
+            if (m.vertices.Length == m.uv.Length) b.AddUV(m.uv[index]);
         }
-        return newTriangleList;
     }
 
-    private void writeNewTriArray(List<int> newTriangleList, Mesh m)
+    private void putTrianglesIntoBoundingBox(Mesh m)
     {
-        Debug.Log("number of index for triangle array: " + newTriangleList.Count);
-        m.SetTriangles(newTriangleList.ToArray(), 0);
+        for (int index = 0; index < m.triangles.Length; index += 3)
+        {
+            int vertexIndex = m.triangles[0 + index];
+            Vector3 worldPoint = trans.TransformPoint(m.vertices[vertexIndex]);
+            BoundHolder b = FindBoundingBox(worldPoint);
+            b.AddTriangle(0 + index, 1 + index, 2 + index);
+        }
     }
 
-    private void clearArraysAndDic()
+    private void regenerateTriangles()
     {
-        partialVertices.Clear();
-        partialNormals.Clear();
-        partialColors.Clear();
-        partialUVs.Clear();
-        partialTriangles.Clear();
-        oldVertexIndices2newVertexIndices.Clear();
-        triangleHash.Clear();
+        foreach (BoundHolder b in subBounds)
+        {
+            b.RegenerateTriangle();
+        }
+    }
+
+    private void drawNewMesh()
+    {
+        int index = 0;
+        foreach (BoundHolder b in subBounds)
+        {
+            GameObject newGameObject = new GameObject();
+            MeshFilter mf = newGameObject.AddComponent<MeshFilter>();
+            mf.name = "NewMesh" + index;
+            MeshRenderer mr = newGameObject.AddComponent<MeshRenderer>();
+            Mesh m = new Mesh();
+
+            m.vertices = b.GetVertices().ToArray();
+            m.normals = b.GetNormals().ToArray();
+            m.colors = b.GetColors().ToArray();
+            m.uv = b.GetUVs().ToArray();
+            m.triangles = b.GetTriangles().ToArray();
+
+            mf.mesh = m;
+            mr.material = new Material(Shader.Find("Transparent/Diffuse"));
+            index++;
+        }
     }
 }
