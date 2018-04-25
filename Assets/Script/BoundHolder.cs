@@ -11,9 +11,11 @@ public class BoundHolder
     private List<Color> partialColoar;
     private List<Vector2> partialUVs;
     private List<int> partialTriangles;
+    private List<int> newTriangles;
+    //private int[] newTriangles;
     private bool isActive;
 
-    public Dictionary<int, int> dictionary;
+    private VertexLookUp map;
 
     public BoundHolder(Vector3 center, Vector3 size)
     {
@@ -23,8 +25,9 @@ public class BoundHolder
         partialColoar = new List<Color>();
         partialUVs = new List<Vector2>();
         partialTriangles = new List<int>();
+        newTriangles = new List<int>();
         isActive = false;
-        dictionary = new Dictionary<int, int>();
+        map = new VertexLookUp();
     }
 
     public Bounds GetBounds()
@@ -51,35 +54,35 @@ public class BoundHolder
         return false;
     }
 
-    public void AddVertexAndPopulateDic(Vector3 vertex, Vector3[] originalVertices)
+    public void ConstructMesh(Mesh m)
     {
-        partialVertices.Add(vertex);
-        int originalVertexIndex = System.Array.IndexOf(originalVertices, vertex);
-        while (dictionary.ContainsKey(originalVertexIndex))
-            originalVertexIndex++;
-        dictionary.Add(originalVertexIndex, partialVertices.Count - 1);
+        List<int> checkRedundant = new List<int>();
+        for (int triangleIndex = 0; triangleIndex < partialTriangles.Count; triangleIndex++)
+        {
+            int vertexIndex = partialTriangles[triangleIndex];
+            if (checkRedundant.Contains(vertexIndex))
+                continue;
+            checkRedundant.Add(vertexIndex);
+            partialVertices.Add(m.vertices[vertexIndex]);
+            partialNormals.Add(m.normals[vertexIndex]);
+            if (m.colors.Length != 0)
+                partialColoar.Add(m.colors[vertexIndex]);
+
+            if (m.uv.Length != 0)
+                partialUVs.Add(m.uv[vertexIndex]);
+        }
     }
 
-    public void AddNormals(Vector3 normal)
+    public void AddTriangle(int[] triangle)
     {
-        partialNormals.Add(normal);
-    }
-
-    public void AddColor(Color color)
-    {
-        partialColoar.Add(color);
-    }
-
-    public void AddUV(Vector2 uv)
-    {
-        partialUVs.Add(uv);
-    }
-
-    public void AddTriangle(int i, int j, int k)
-    {
-        partialTriangles.Add(i);
-        partialTriangles.Add(j);
-        partialTriangles.Add(k);
+        for (int index = 0; index < triangle.Length; index++)
+        {
+            partialTriangles.Add(triangle[index]);
+            if (!map.IsOldIndexInLookUp(triangle[index]))
+                map.AddOldIndex(triangle[index]);
+            int newIndex = map.FindValue(triangle[index]);
+            newTriangles.Add(newIndex);
+        }
     }
 
     public List<Vector3> GetVertices()
@@ -89,7 +92,7 @@ public class BoundHolder
 
     public List<int> GetTriangles()
     {
-        return partialTriangles;
+        return newTriangles;
     }
 
     public List<Vector3> GetNormals()
@@ -105,22 +108,5 @@ public class BoundHolder
     public List<Vector2> GetUVs()
     {
         return partialUVs;
-    }
-
-    public void RegenerateTriangle()
-    {
-        List<int> newTriangle = new List<int>();
-        for (int index = 0; index < partialTriangles.Count; index++)
-        {
-            //if (!dictionary.ContainsKey(partialTriangles[index])) break;
-            int newIndex = dictionary[partialTriangles[index]];
-            newTriangle.Add(newIndex);
-        }
-        partialTriangles.Clear();
-        partialTriangles = newTriangle;
-        //for (int i = 0; i < partialTriangles.Count; i++)
-        //{
-        //    Debug.Log("partialTriangles[" + i + "]: " + partialTriangles[i] /*+ " newTriangles[" + i + "]: " + newTriangle[i]*/);
-        //}
     }
 }
